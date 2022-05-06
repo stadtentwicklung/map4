@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' />
+            <title>Stadtteilrundgang Sachsendorf</title>
+
+			
+			<!-- Leaflet
+             <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+				integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+				crossorigin=""/>
+            <!-- Make sure you put this AFTER Leaflet's CSS
+			<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+				integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+				crossorigin=""></script>-->
+			
+            <!-- Leaflet -->
+            <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.5/leaflet.css" />
+            <script src="http://cdn.leafletjs.com/leaflet-0.7.5/leaflet.js"></script>
+			
+			<!-- Loading-Control: https://github.com/ebrelsford/Leaflet.loading -->
+			<link rel="stylesheet" href="./src/Control.Loading.css" />
+			<script src="./src/Control.Loading.js"></script>			
+			<!-- GPX -->
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
+
+            <style>
+                body { margin:0; padding:0; }
+                body, table, tr, td, th, div, h1, h2, input { font-family: "Calibri", "Trebuchet MS", "Ubuntu", Serif; font-size: 11pt; }
+                #map { position:absolute; top:0; bottom:0; width:100%; } /* full size */
+                .ctl {
+                    padding: 2px 10px 2px 10px;
+                    background: white;
+                    background: rgba(255,255,255,0.9);
+                    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+                    border-radius: 5px;
+                    text-align: right;
+                }
+                .title {
+                    font-size: 18pt;
+                    font-weight: bold;
+                }
+                .src {
+                    font-size: 10pt;
+                }
+				#locateButton { position: absolute; bottom:30px; right:10px; padding:10px; z-index:500; background: white; background: rgba(255,255,255,0.9); box-shadow: 0 0 15px rgba(0,0,0,0.2); border-radius: 5px; text-align: right }
+            </style>
+
+        </head>
+        <body>
+
+		<input type="button" id="locateButton" value="Standort anzeigen oder erneut laden!" onClick="javascript:getLocationLeaflet();">
+		
+        <div id="map"></div>
+
+        <script>
+        /* **** Leaflet **** */
+
+        // Base layers
+        //  .. OpenStreetMap
+        var osm = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors', minZoom: 13, maxZoom: 17});
+
+        //  .. CartoDB Positron
+        var cartodb = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>', minZoom: 13, maxZoom: 17});
+
+        //  .. OSM Toner
+        var toner = L.tileLayer('http://{s}.tile.stamen.com/toner/{z}/{x}/{y}.png', {attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://www.openstreetmap.org/copyright">ODbL</a>.', minZoom: 13, maxZoom: 17});
+
+        //  .. White background
+        var white = L.tileLayer("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAAA1BMVEX///+nxBvIAAAAH0lEQVQYGe3BAQ0AAADCIPunfg43YAAAAAAAAAAA5wIhAAAB9aK9BAAAAABJRU5ErkJggg==", {minZoom: 13, maxZoom: 17});
+
+        // Overlay layers (TMS)
+		var lyr = L.tileLayer('./{z}/{x}/{y}.png', {tms: true, opacity: 1, attribution: '&copy; Stadtentwicklung CB 2022 - <a href="https://raw.githubusercontent.com/stadtentwicklung/map4/main/img/rundwegkarte.jpg">Download</a> ', minZoom: 13, maxZoom: 17});
+		
+		// GPX-Track
+		// Create Track with https://routing.openstreetmap.de/ 
+		var gpx = 'https://raw.githubusercontent.com/stadtentwicklung/map4/main/track/route.gpx'; // URL to your GPX file or the GPX itself
+		var track = new L.GPX(gpx, {
+			async: true,
+			marker_options: {
+				startIconUrl: 'https://raw.githubusercontent.com/mpetazzoni/leaflet-gpx/main/pin-icon-start.png',
+				endIconUrl: 'https://raw.githubusercontent.com/mpetazzoni/leaflet-gpx/main/pin-icon-end.png',
+				wptIconUrls: 'https://raw.githubusercontent.com/mpetazzoni/leaflet-gpx/main/pin-icon-wpt.png',
+				shadowUrl: 'https://raw.githubusercontent.com/mpetazzoni/leaflet-gpx/main/pin-shadow.png'
+			},
+			polyline_options: {
+				color: 'red',
+				opacity: 1,
+				weight: 6,
+				lineCap: 'round'
+			}
+		}).on('loaded', function(e) {	
+		});
+		
+
+        // Map
+        var map = L.map('map', {
+            center: [51.72969498828655, 14.325724013205331],
+            zoom: 17,
+            minZoom: 13,
+            maxZoom: 17,
+            layers: [osm, lyr],
+			loadingControl: true
+        });
+
+        var basemaps = {"OpenStreetMap": osm, "CartoDB Positron": cartodb, "Stamen Toner": toner, "Without background": white}
+        var overlaymaps = {"Rundgangskarte": lyr, "Route": track}
+
+        // Title
+        var title = L.control();
+        title.onAdd = function(map) {
+            this._div = L.DomUtil.create('div', 'ctl title');
+            this.update();
+            return this._div;
+        };
+        title.update = function(props) {
+            this._div.innerHTML = "Stadtteilrundgang Sachsendorf";
+        };
+        title.addTo(map);
+
+        // Add base layers
+        L.control.layers(basemaps, overlaymaps, {collapsed: false}).addTo(map);
+
+        // Fit to overlay bounds (SW and NE points with (lat, lon))
+        map.fitBounds([[51.72123941229648, 14.344855776021328], [51.73815056427664, 14.306592250389334]]);
+		
+		// LOCATING
+		
+		function onLocationFound(e) {
+			// var radius = e.accuracy / 2; /*Radius um den Marker*/
+			var location = e.latlng
+			L.marker(location).addTo(map).bindPopup("Standort").openPopup();
+			// L.circle(location, radius).addTo(map); /*Kreis zeigen*/
+		};
+
+		function onLocationError(e) {
+			alert(e.message);
+		};
+
+		function getLocationLeaflet() {
+			map.on('locationfound', onLocationFound);
+			map.on('locationerror', onLocationError);
+			map.locate({setView: true, zoom: 17});
+		};
+
+        </script>
+
+        </body>
+        </html>
+
+        
