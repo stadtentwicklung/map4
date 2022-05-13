@@ -1,7 +1,7 @@
-# :world_map: Urbaner Entwicklungsplan
+# :world_map: Stadtteilrundgang
 :white_check_mark: Georeferenziertes Rendering erstellen und als Web-Map publizieren mit Standortermittlung.
 
-## :computer: Link [https://stadtentwicklung.github.io/map2/)
+## :computer: Link [https://stadtentwicklung.github.io/map4/)
 
 ### :camera_flash: Screenshot:
 ![Screenshot der GitHub-Pages App](https://raw.githubusercontent.com/stadtentwicklung/map2/master/img/screenshotApp.PNG)
